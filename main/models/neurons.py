@@ -73,7 +73,7 @@ class GLIFR(nn.Module):
                     self.asc_amp = Parameter(-0.01 + 0.02 * torch.rand((self.num_ascs, 1, hidden_size), dtype=torch.float), requires_grad=True)
 
                 self.v_reset = 0
-
+                
                 if not learnparams:
                     self.thresh.requires_grad = False
                     self.trans_k_m.requires_grad = False
@@ -152,8 +152,10 @@ class GLIFR(nn.Module):
                 
                 if self.ascs:
                         ascurrent = (ascurrent * self.transform_to_asc_r(self.trans_asc_r) + self.asc_amp) * firing * (self.dt/self.tau) + (1 - self.dt * self.transform_to_k(self.trans_asc_k)) * ascurrent
+            
+                voltage =  self.dt * self.transform_to_k(self.trans_k_m) * self.R * ( syncurrent + torch.sum(ascurrent, dim=0) + self.I0) + \
+                    (1 - self.dt * self.transform_to_k(self.trans_k_m)) * voltage - (self.dt / self.tau) * firing * (voltage - self.v_reset)    
                 
-                voltage = syncurrent + self.dt * self.transform_to_k(self.trans_k_m) * self.R * (torch.sum(ascurrent, dim=0) + self.I0) + (1 - self.dt * self.transform_to_k(self.trans_k_m)) * voltage - (self.dt / self.tau) * firing * (voltage - self.v_reset)
                 firing = self.spike_fn(voltage)
                 return firing, voltage, ascurrent, syncurrent
         
